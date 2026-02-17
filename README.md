@@ -1,2 +1,49 @@
-# DLL-Search-Order-Abuse
-Research on abusing Windows DLL search order for code execution, privilege escalation and EDR Bypass.
+## Introduction
+In modern enterprise environments, employees frequently use third-party and open-source applications such as KeePass, FileZilla, and other utility tools to support daily operations. These applications often rely on multiple Dynamic Link Libraries (DLLs) to load functionality at runtime. While DLL-based modular architecture improves performance and code reuse, improper configuration of DLL loading mechanisms can introduce security risks. If an attacker gains write access to a directory involved in the DLL search order, it may be possible to replace or introduce a malicious DLL. When the application loads this DLL, the attacker-controlled code executes within the context of the legitimate process.
+
+This can potentially lead to:
+
+- Code execution inside trusted processes  
+- Privilege escalation (if the application runs with elevated rights)  
+- Reverse shell execution  
+- EDR evasion attempts  
+- Lateral movement opportunities  
+
+This research explores how Windows DLL loading works, how the DLL search order can be abused in misconfigured environments, and how defenders can detect and prevent such abuse.
+
+## What is a DLL?
+A DLL (Dynamic Link Library) is a file that contains reusable code and functionality that can be shared across multiple programs. Instead of embedding all functionality inside a single executable (EXE), Windows applications load required DLLs at runtime. This modular design reduces redundancy, improves memory efficiency, and simplifies maintenance. Windows itself relies heavily on DLLs to provide shared system functionality. Without DLLs, each application would need to include duplicate copies of common code, resulting in significant resource waste and increased system overhead.
+
+## DLL Internals
+
+A DLL (Dynamic Link Library) is not merely a passive file containing reusable code. When loaded into a process, Windows maps the DLL into memory and may execute code inside it as part of the initialization sequence.
+
+Understanding this execution behavior is critical when analyzing DLL hijacking scenarios.
+
+---
+
+### What Does "Loading a DLL" Actually Mean?
+
+When a DLL is loaded:
+
+1. The operating system maps the DLL into the process’s virtual memory.
+2. The loader resolves imported functions.
+3. Relocations are applied if necessary.
+4. The entry point function `DllMain()` is executed automatically.
+
+It is important to note that Windows does **not** simply read the file — it executes code inside the DLL during the loading phase.
+
+---
+
+### The DllMain Function
+
+Every standard DLL contains an entry point called:
+
+```c
+BOOL WINAPI DllMain(
+    HINSTANCE hinstDLL,
+    DWORD fdwReason,
+    LPVOID lpReserved
+);
+<img width="519" height="556" alt="image" src="https://github.com/user-attachments/assets/38248ee7-25a0-4250-9db6-b2e080020e4b" />
+
