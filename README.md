@@ -37,13 +37,60 @@ It is important to note that Windows does **not** simply read the file — it ex
 
 ### The DllMain Function
 
-Every standard DLL contains an entry point called:
+Every standard DLL contains an entry point called DllMain:
 
-```c
+#include <windows.h>
+
 BOOL WINAPI DllMain(
-    HINSTANCE hinstDLL,
-    DWORD fdwReason,
-    LPVOID lpReserved
-);
-<img width="519" height="556" alt="image" src="https://github.com/user-attachments/assets/38248ee7-25a0-4250-9db6-b2e080020e4b" />
+    HINSTANCE hinstDLL,      // Handle to DLL module
+    DWORD fdwReason,         // Reason for calling function
+    LPVOID lpReserved        // Reserved
+)
+{
+    switch (fdwReason)
+    {
+        case DLL_PROCESS_ATTACH:
+            // Executed when the DLL is loaded into a process
+            // Initialize global resources here
+            break;
+
+        case DLL_THREAD_ATTACH:
+            // Executed when a new thread is created
+            // Perform thread-specific initialization
+            break;
+
+        case DLL_THREAD_DETACH:
+            // Executed when a thread exits cleanly
+            // Perform thread-specific cleanup
+            break;
+
+        case DLL_PROCESS_DETACH:
+            // Executed when the DLL is unloaded
+            // Cleanup global resources
+            break;
+    }
+
+    return TRUE;  // Successful load
+}
+
+### Understanding the Four DllMain Cases
+
+The Windows loader invokes `DllMain()` automatically and passes one of four official notifications via the `fdwReason` parameter.
+
+#### 1. DLL_PROCESS_ATTACH
+Triggered when the DLL is loaded into a process. This is the most critical notification in DLL hijacking scenarios because any initialization code placed here executes immediately when the DLL is mapped into memory.
+
+#### 2. DLL_THREAD_ATTACH
+Triggered whenever a new thread is created within the process. Used for thread-specific initialization logic.
+
+#### 3. DLL_THREAD_DETACH
+Triggered when a thread exits cleanly. Allows thread-level cleanup operations.
+
+#### 4. DLL_PROCESS_DETACH
+Triggered when the DLL is unloaded or when the process terminates. Used for releasing global resources.
+
+---
+
+From a security perspective, `DLL_PROCESS_ATTACH` is the most significant case. If a malicious DLL is loaded due to search order abuse, code placed inside this block executes automatically within the target process context.
+
 
