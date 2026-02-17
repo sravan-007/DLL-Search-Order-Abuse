@@ -48,12 +48,13 @@ BOOL WINAPI DllMain(
 )
 {
     switch (fdwReason)
+   
     {
         case DLL_PROCESS_ATTACH:
             // Executed when the DLL is loaded into a process
             // Initialize global resources here
             break;
-
+            
         case DLL_THREAD_ATTACH:
             // Executed when a new thread is created
             // Perform thread-specific initialization
